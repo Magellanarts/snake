@@ -3,14 +3,15 @@
     <div class="header">
       <div>SCORE: {{ snakeLength }}</div>
     </div>
-    <div class="grid" ref="grid">
-      <div
-        v-for="(block, index) in blocks"
-        class="block"
-        :key="index"
-        :class="classObject(index, block)"
-      >
-      {{ index }}
+    <div class="game-container">
+      <div v-if="gameOver" class="game-over">GAME OVER</div>
+      <div class="grid" ref="grid">
+        <div
+          v-for="(block, index) in blocks"
+          class="block"
+          :key="index"
+          :class="classObject(index, block)"
+        />
       </div>
     </div>
   </div>
@@ -18,15 +19,10 @@
 
 <script>
 // TODO: Make sure logic for apple placement never puts apple on snake
-// TODO: stop from moving back to previous block once you have a tail
-//      maybe shake playing area to let player know
-// TODO: Logic to check if snake head hits part of tail = GAME OVER
-// TODO: Way to have the snake move automatically
-//    Will continue in last direction moved unless user changes
-//    running into wall will end game
-//    slowly speed snake up
+// TODO: Arrow buttons for small screen
+// TODO: color of snake should be a gradient from head to tail
 
-import { setInterval } from 'timers';
+import { setInterval, setTimeout } from 'timers';
 
 export default {
   name: 'home',
@@ -42,7 +38,10 @@ export default {
       foundSnakes: [0],
       applePosition: 13,
       lastDirection: '',
-      appleTimeout: 4000,
+      appleTimeout: 3500,
+      hasMoved: false,
+      moveTimeout: 370,
+      gameOver: false,
     };
   },
   created() {
@@ -88,8 +87,11 @@ export default {
       if ((this.snakePosition + 1) % this.numCols > 0) {
         this.snakePreviousPosition = this.snakePosition;
         this.snakePosition = this.snakePosition + 1;
+
         this.lastDirection = 'R';
         this.afterMove();
+      } else {
+        this.endGame();
       }
     },
     moveSnakeDown() {
@@ -98,6 +100,8 @@ export default {
         this.snakePosition = this.snakePosition + this.numCols;
         this.lastDirection = 'D';
         this.afterMove();
+      } else {
+        this.endGame();
       }
     },
     moveSnakeLeft() {
@@ -106,6 +110,8 @@ export default {
         this.snakePosition = this.snakePosition - 1;
         this.lastDirection = 'L';
         this.afterMove();
+      } else {
+        this.endGame();
       }
     },
     moveSnakeUp() {
@@ -114,9 +120,17 @@ export default {
         this.snakePosition = this.snakePosition - this.numCols;
         this.lastDirection = 'U';
         this.afterMove();
+      } else {
+        this.endGame();
       }
     },
     afterMove() {
+      // check to see if this new position already contains the snake
+      // if so, game over
+      if (this.blocks[this.snakePosition] === 'S') {
+        this.endGame();
+      }
+
       // set the index of the head of snake in the blocks array to an S
       this.$set(this.blocks, this.snakePosition, 'S');
 
@@ -140,7 +154,40 @@ export default {
         // reset apple position
         // / interval will set a new one
         this.applePosition = '';
+
+        // decrease automovement timeout
+        this.moveTimeout = this.moveTimeout * 0.98;
       }
+
+      // start automovement
+      if (!this.hasMoved) {
+        this.hasMoved = true;
+        const autoMovement = () => {
+          switch (this.lastDirection) {
+            case 'R':
+              this.moveSnakeRight();
+              break;
+            case 'D':
+              this.moveSnakeDown();
+              break;
+            case 'L':
+              this.moveSnakeLeft();
+              break;
+            case 'U':
+              this.moveSnakeUp();
+              break;
+            default:
+              break;
+          }
+
+          setTimeout(autoMovement, this.moveTimeout);
+        };
+
+        setTimeout(autoMovement, this.moveTimeout);
+      }
+    },
+    endGame() {
+      this.gameOver = true;
     },
     getSnakePosition() {
       const rowPosition = Math.floor(this.snakePosition / this.numRows);
@@ -174,6 +221,7 @@ export default {
 
 .block {
   background: #aaa;
+  transition: .1s linear;
 }
 
 .snake {
@@ -182,5 +230,20 @@ export default {
 
 .apple {
   background: red;
+}
+
+.game-container {
+  position: relative;
+}
+
+.game-over {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  font-size: 28px;
+  background: #fff;
 }
 </style>
