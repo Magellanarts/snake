@@ -258,12 +258,9 @@ export default {
       this.$refs.grid.style.gridTemplateColumns = `repeat(${this.numCols}, 25px)`;
       this.$refs.grid.style.gridTemplateRows = `repeat(${this.numRows}, 25px)`;
 
-      const tempArray = new Array((this.numRows * this.numCols) - (((this.numRows - 1) * (this.numCols - 1))));
-
-      this.blocks.push(...tempArray);
+      this.blocks = this.blocks.slice(0, this.numRows * this.numCols);
     },
     pauseGame() {
-      console.log('pasuin');
       clearTimeout(this.gameTimeout);
     },
   },
