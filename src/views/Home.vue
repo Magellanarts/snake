@@ -2,6 +2,21 @@
   <div>
     <div class="header">
       <div>SCORE: {{ snakeLength }}</div>
+      <div>
+        <button @click="increaseGridSize">Increase</button>
+        <button @click="decreaseGridSize">Decrease</button>
+        <button @click="pauseGame">Pause</button>
+      </div>
+    </div>
+
+    <div>
+      <h4>LEGEND</h4>
+      <div class="legend">
+        <div class="legend__snake"></div>
+        <div>Snake</div>
+        <div class="legend__apple"></div>
+        <div>Apple</div>
+      </div>
     </div>
     <div class="game-container">
       <div v-if="gameOver" class="game-over">GAME OVER</div>
@@ -11,7 +26,9 @@
           class="block"
           :key="index"
           :class="classObject(index, block)"
-        />
+        >
+        {{ index }}
+        </div>
       </div>
     </div>
   </div>
@@ -22,14 +39,14 @@
 // TODO: Arrow buttons for small screen
 // TODO: color of snake should be a gradient from head to tail
 
-import { setInterval, setTimeout } from 'timers';
+import { setInterval, setTimeout, clearTimeout } from 'timers';
 
 export default {
   name: 'home',
   data() {
     return {
-      numRows: 12,
-      numCols: 12,
+      numRows: 11,
+      numCols: 11,
       blocks: [],
       snakePreviousPosition: 0,
       snakePosition: 0,
@@ -40,24 +57,46 @@ export default {
       lastDirection: '',
       appleTimeout: 3500,
       hasMoved: false,
-      moveTimeout: 370,
+      moveTimeout: 300,
       gameOver: false,
+      movementStart: false,
+      gameTimeout: '',
     };
   },
   created() {
     window.addEventListener('keydown', (event) => {
       switch (event.key) {
         case 'ArrowLeft':
-          this.moveSnakeLeft();
+          if (this.movementStart === false) {
+            this.movementStart = true;
+            this.moveSnakeLeft();
+          } else {
+            this.lastDirection = 'L';
+          }
           break;
         case 'ArrowRight':
-          this.moveSnakeRight();
+          if (this.movementStart === false) {
+            this.movementStart = true;
+            this.moveSnakeRight();
+          } else {
+            this.lastDirection = 'R';
+          }
           break;
         case 'ArrowDown':
-          this.moveSnakeDown();
+          if (this.movementStart === false) {
+            this.movementStart = true;
+            this.moveSnakeDown();
+          } else {
+            this.lastDirection = 'D';
+          }
           break;
         case 'ArrowUp':
-          this.moveSnakeUp();
+          if (this.movementStart === false) {
+            this.movementStart = true;
+            this.moveSnakeUp();
+          } else {
+            this.lastDirection = 'U';
+          }
           break;
         default:
           break;
@@ -65,6 +104,10 @@ export default {
     });
   },
   mounted() {
+    // set up grid
+    this.$refs.grid.style.gridTemplateColumns = `repeat(${this.numCols}, 25px)`;
+    this.$refs.grid.style.gridTemplateRows = `repeat(${this.numRows}, 25px)`;
+
     this.blocks = new Array(this.numRows * this.numCols);
     this.blocks[this.snakePosition] = 'S';
 
@@ -180,7 +223,7 @@ export default {
               break;
           }
 
-          setTimeout(autoMovement, this.moveTimeout);
+          this.gameTimeout = setTimeout(autoMovement, this.moveTimeout);
         };
 
         setTimeout(autoMovement, this.moveTimeout);
@@ -188,15 +231,6 @@ export default {
     },
     endGame() {
       this.gameOver = true;
-    },
-    getSnakePosition() {
-      const rowPosition = Math.floor(this.snakePosition / this.numRows);
-      const colPostion = this.snakePosition % this.numCols;
-
-      return {
-        row: rowPosition,
-        col: colPostion,
-      };
     },
     classObject(index, block) {
       // start with the apple position class binding
@@ -206,17 +240,61 @@ export default {
       };
       return styles;
     },
+    increaseGridSize() {
+      this.numRows = this.numRows + 1;
+      this.numCols = this.numCols + 1;
+
+      this.$refs.grid.style.gridTemplateColumns = `repeat(${this.numCols}, 25px)`;
+      this.$refs.grid.style.gridTemplateRows = `repeat(${this.numRows}, 25px)`;
+
+      const tempArray = new Array((this.numRows * this.numCols) - (((this.numRows - 1) * (this.numCols - 1))));
+
+      this.blocks.push(...tempArray);
+    },
+    decreaseGridSize() {
+      this.numRows = this.numRows - 1;
+      this.numCols = this.numCols - 1;
+
+      this.$refs.grid.style.gridTemplateColumns = `repeat(${this.numCols}, 25px)`;
+      this.$refs.grid.style.gridTemplateRows = `repeat(${this.numRows}, 25px)`;
+
+      const tempArray = new Array((this.numRows * this.numCols) - (((this.numRows - 1) * (this.numCols - 1))));
+
+      this.blocks.push(...tempArray);
+    },
+    pauseGame() {
+      console.log('pasuin');
+      clearTimeout(this.gameTimeout);
+    },
   },
 };
 </script>
 
-<style lang="scss" >
+<style lang="scss">
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(12, 25px);
-  grid-template-rows: repeat(12, 25px);
+ // grid-template-columns: repeat(12, 25px);
+ // grid-template-rows: repeat(12, 25px);
   grid-column-gap: 3px;
   grid-row-gap: 3px;
+}
+
+.legend {
+  grid-template-columns: 25px calc(100% - 25px);
+  display: grid;
+  grid-column-gap: 3px;
+  grid-row-gap: 3px;
+  max-width: 300px;
+  margin-bottom: 15px;
+
+  &__apple {
+    background: red;
+  }
+
+  &__snake {
+    background: greenyellow;
+  }
 }
 
 .block {
